@@ -15,7 +15,7 @@ import mamaAvatar from '@/assets/mama-avatar.png';
 const initialMessages: Message[] = [
   {
     id: '1',
-    content: '¡Hola! Soy Mamá, tu asistente de salud. 💜\n\nEstoy aquí para ayudarte. Cuéntame, ¿qué síntomas estás experimentando hoy?',
+    content: '¡Hola! Soy Mamá, tu asistente de salud.\n\nEstoy aquí para ayudarte. Cuéntame, ¿qué síntomas estás experimentando hoy?',
     sender: 'mama',
     timestamp: new Date(),
   },
@@ -149,7 +149,7 @@ const Chat = () => {
     }
 
     if (lowerMessage.includes('gracias') || lowerMessage.includes('thank')) {
-      return '¡De nada! Recuerda que estoy aquí para ayudarte. Si tienes más preguntas sobre tu salud, no dudes en consultarme. 💜\n\n¿Hay algo más en lo que pueda ayudarte?';
+      return '¡De nada! Recuerda que estoy aquí para ayudarte. Si tienes más preguntas sobre tu salud, no dudes en consultarme.\n\n¿Hay algo más en lo que pueda ayudarte?';
     }
 
     if (lowerMessage.includes('cita') || lowerMessage.includes('doctor') || lowerMessage.includes('médico')) {
@@ -157,7 +157,7 @@ const Chat = () => {
     }
 
     if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('buenas')) {
-      return '¡Hola! ¿Cómo te encuentras hoy? Cuéntame si tienes algún síntoma o malestar que te preocupe. Estoy aquí para ayudarte. 💜';
+      return '¡Hola! ¿Cómo te encuentras hoy? Cuéntame si tienes algún síntoma o malestar que te preocupe. Estoy aquí para ayudarte.';
     }
 
     return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
@@ -197,8 +197,8 @@ const Chat = () => {
           const mamaMessage: Message = {
             id: (Date.now() + 2).toString(),
             content: userContext
-              ? `¡Perfecto! He guardado tu archivo "${attachedFile.name}" en tu Historia Clínica Digital. 📁\n\n¿Hay algo más en lo que pueda ayudarte?`
-              : '¡Perfecto! He guardado tu archivo en tu Historia Clínica Digital. Puedes acceder a él cuando lo necesites. 📁\n\n¿Hay algo más en lo que pueda ayudarte?',
+              ? `¡Perfecto! He guardado tu archivo "${attachedFile.name}" en tu Historia Clínica Digital.\n\n¿Hay algo más en lo que pueda ayudarte?`
+              : '¡Perfecto! He guardado tu archivo en tu Historia Clínica Digital. Puedes acceder a él cuando lo necesites.\n\n¿Hay algo más en lo que pueda ayudarte?',
             sender: 'mama',
             timestamp: new Date(),
           };
@@ -234,33 +234,37 @@ const Chat = () => {
     }, 1500);
   };
 
+  const quickSymptoms = ['Dolor de cabeza', 'Fiebre', 'Tos', 'Cansancio'];
+
   return (
     <MobileLayout>
-      <header className="flex items-center gap-4 px-4 py-4 bg-card border-b border-border">
+      {/* Header */}
+      <header className="flex items-center gap-4 px-5 py-4 bg-card border-b border-border">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 hover:bg-accent rounded-full transition-colors"
+          className="p-2 hover:bg-muted rounded-xl transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div className="flex items-center gap-3">
-          <img src={mamaAvatar} alt="Mama" className="w-10 h-10 rounded-full" />
+          <div className="w-10 h-10 rounded-xl overflow-hidden bg-accent">
+            <img src={mamaAvatar} alt="Mama" className="w-full h-full object-cover" />
+          </div>
           <div>
             <h1 className="font-semibold text-foreground">Mamá</h1>
-            <p className="text-xs text-green-500">En línea • Asistente de salud</p>
+            <p className="text-xs text-success">En línea</p>
           </div>
         </div>
       </header>
 
-      <div className="px-4 py-3 bg-card/50 border-b border-border overflow-x-auto">
+      {/* Quick Symptoms */}
+      <div className="px-5 py-3 bg-background border-b border-border overflow-x-auto scrollbar-hide">
         <div className="flex gap-2">
-          {['Dolor de cabeza', 'Fiebre', 'Tos', 'Cansancio', 'Estómago'].map((symptom) => (
+          {quickSymptoms.map((symptom) => (
             <button
               key={symptom}
-              onClick={() => {
-                setInputValue(`Tengo ${symptom.toLowerCase()}`);
-              }}
-              className="px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium whitespace-nowrap hover:bg-primary/20 transition-colors"
+              onClick={() => setInputValue(`Tengo ${symptom.toLowerCase()}`)}
+              className="px-4 py-2 bg-accent text-accent-foreground rounded-xl text-sm font-medium whitespace-nowrap hover:bg-accent/80 transition-colors"
             >
               {symptom}
             </button>
@@ -268,30 +272,33 @@ const Chat = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-36 space-y-4">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 pb-40 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
             className={cn(
-              "flex gap-2",
+              "flex gap-3",
               message.sender === 'user' ? "justify-end" : "justify-start"
             )}
           >
             {message.sender === 'mama' && (
-              <img src={mamaAvatar} alt="Mama" className="w-8 h-8 rounded-full self-end" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-accent flex-shrink-0 self-end">
+                <img src={mamaAvatar} alt="Mama" className="w-full h-full object-cover" />
+              </div>
             )}
             <div
               className={cn(
                 "max-w-[75%] px-4 py-3 rounded-2xl",
                 message.sender === 'user'
-                  ? "bg-primary text-primary-foreground rounded-br-sm"
-                  : "bg-card border border-border text-foreground rounded-bl-sm"
+                  ? "bg-primary text-primary-foreground rounded-br-md"
+                  : "bg-card border border-border text-foreground rounded-bl-md"
               )}
             >
               <p className="text-sm whitespace-pre-line">{message.content}</p>
               <p
                 className={cn(
-                  "text-xs mt-1",
+                  "text-xs mt-2",
                   message.sender === 'user' ? "text-primary-foreground/70" : "text-muted-foreground"
                 )}
               >
@@ -302,9 +309,11 @@ const Chat = () => {
         ))}
 
         {isTyping && (
-          <div className="flex gap-2 justify-start">
-            <img src={mamaAvatar} alt="Mama" className="w-8 h-8 rounded-full self-end" />
-            <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-bl-sm">
+          <div className="flex gap-3 justify-start">
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-accent flex-shrink-0 self-end">
+              <img src={mamaAvatar} alt="Mama" className="w-full h-full object-cover" />
+            </div>
+            <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-bl-md">
               <div className="flex gap-1">
                 <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -316,13 +325,14 @@ const Chat = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-md px-4 py-3 bg-background border-t border-border">
+      {/* Input */}
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-md px-5 py-3 bg-background border-t border-border">
         {attachedFile && (
-          <div className="flex items-center gap-2 mb-2 p-2 bg-primary/10 rounded-lg">
+          <div className="flex items-center gap-2 mb-3 p-3 bg-accent rounded-xl">
             {attachedFile.type.includes('pdf') ? (
-              <FileText className="w-5 h-5 text-primary" />
+              <FileText className="w-5 h-5 text-accent-foreground" />
             ) : (
-              <ImageIcon className="w-5 h-5 text-primary" />
+              <ImageIcon className="w-5 h-5 text-accent-foreground" />
             )}
             <span className="text-sm text-foreground truncate flex-1">{attachedFile.name}</span>
             <button
@@ -330,13 +340,13 @@ const Chat = () => {
                 setAttachedFile(null);
                 if (fileInputRef.current) fileInputRef.current.value = '';
               }}
-              className="p-1 hover:bg-primary/20 rounded-full"
+              className="p-1 hover:bg-muted rounded-lg"
             >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <input
             ref={fileInputRef}
             type="file"
@@ -347,21 +357,21 @@ const Chat = () => {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="p-2 text-muted-foreground hover:text-primary transition-colors"
+            className="p-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-colors"
           >
-            <Paperclip className="w-6 h-6" />
+            <Paperclip className="w-5 h-5" />
           </button>
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Describe tus síntomas..."
-            className="flex-1 bg-card border-border rounded-full py-5"
+            className="flex-1 bg-card border-border rounded-xl py-6"
           />
           <button
             onClick={handleSend}
             disabled={(!inputValue.trim() && !attachedFile) || isUploading}
-            className="p-3 bg-primary text-primary-foreground rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+            className="p-3 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
           >
             {isUploading ? (
               <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />

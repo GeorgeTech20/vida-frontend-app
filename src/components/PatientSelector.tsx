@@ -1,27 +1,30 @@
 import { useState, useEffect } from 'react';
-import { ChevronDown, User, Check, Crown } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ChevronDown, Check, Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Patient {
   id: string;
   dni: string;
   first_name: string;
   last_name: string;
-  birth_date: string;
+  birth_date: string | null;
   height: number | null;
   weight: number | null;
   gender: string | null;
+  phone: string | null;
+  email: string | null;
+  user_id: string;
 }
 
 const PatientSelector = () => {
   const { user, profile, refreshProfile } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user?.id) {
@@ -29,171 +32,156 @@ const PatientSelector = () => {
     }
   }, [user?.id]);
 
-  // Auto-set patient_main and patient_active if not configured
   useEffect(() => {
-    const autoConfigurePatients = async () => {
+    const configureDefaultPatient = async () => {
       if (!user?.id || !profile || patients.length === 0) return;
-
-      // If no patient_main or patient_active, set the first patient
+      
       if (!profile.patient_main || !profile.patient_active) {
         const firstPatient = patients[0];
-        try {
-          const updates: { patient_main?: string; patient_active?: string } = {};
-          if (!profile.patient_main) updates.patient_main = firstPatient.id;
-          if (!profile.patient_active) updates.patient_active = firstPatient.id;
-
-          if (Object.keys(updates).length > 0) {
-            await supabase
-              .from('profiles')
-              .update(updates)
-              .eq('user_id', user.id);
-            await refreshProfile();
-          }
-        } catch (error) {
-          console.error('Error auto-configuring patients:', error);
-        }
+        await supabase
+          .from('profiles')
+          .update({
+            patient_main: profile.patient_main || firstPatient.id,
+            patient_active: profile.patient_active || firstPatient.id
+          })
+          .eq('user_id', user.id);
+        refreshProfile();
       }
     };
 
-    autoConfigurePatients();
+    configureDefaultPatient();
   }, [patients, profile, user?.id]);
 
   const fetchPatients = async () => {
     if (!user?.id) return;
-
+    
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('patients_app')
-        .select('id, dni, first_name, last_name, birth_date, height, weight, gender')
+        .select('*')
         .eq('user_id', user.id);
-
+      
       if (error) throw error;
       setPatients(data || []);
     } catch (error) {
       console.error('Error fetching patients:', error);
-    }
-  };
-
-  const handleSelectPatient = async (patientId: string) => {
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ patient_active: patientId })
-        .eq('user_id', user?.id);
-
-      if (error) throw error;
-
-      await refreshProfile();
-      toast.success('Paciente cambiado');
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Error updating active patient:', error);
-      toast.error('Error al cambiar paciente');
     } finally {
       setLoading(false);
     }
   };
 
-  // Sort patients: main patient first (or first patient if no main), then others
-  const mainPatientId = profile?.patient_main || (patients.length > 0 ? patients[0].id : null);
+  const handleSelectPatient = async (patientId: string) => {
+    if (!user?.id) return;
+    
+    try {
+      await supabase
+        .from('profiles')
+        .update({ patient_active: patientId })
+        .eq('user_id', user.id);
+      
+      refreshProfile();
+      setOpen(false);
+    } catch (error) {
+      console.error('Error selecting patient:', error);
+    }
+  };
+
   const sortedPatients = [...patients].sort((a, b) => {
-    if (a.id === mainPatientId) return -1;
-    if (b.id === mainPatientId) return 1;
+    if (a.id === profile?.patient_main) return -1;
+    if (b.id === profile?.patient_main) return 1;
     return 0;
   });
 
   const activePatient = patients.find(p => p.id === profile?.patient_active);
-  const displayName = activePatient
-    ? activePatient.first_name
-    : profile?.name || 'Usuario';
+  
+  const displayName = activePatient 
+    ? `${activePatient.first_name} ${activePatient.last_name}`
+    : profile?.name || user?.email?.split('@')[0] || 'Usuario';
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return '¡Buenos días!';
-    if (hour < 18) return '¡Buenas tardes!';
-    return '¡Buenas noches!';
+    if (hour < 12) return 'Buenos días';
+    if (hour < 19) return 'Buenas tardes';
+    return 'Buenas noches';
   };
 
-  // Get initials for avatar fallback
-  const getInitials = () => {
-    if (activePatient) {
-      return `${activePatient.first_name.charAt(0)}${activePatient.last_name.charAt(0)}`.toUpperCase();
-    }
-    if (profile) {
-      return `${profile.name?.charAt(0) || ''}${profile.surname?.charAt(0) || ''}`.toUpperCase();
-    }
-    return 'U';
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-full bg-muted animate-pulse" />
+        <div className="space-y-2">
+          <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+          <div className="h-5 w-32 bg-muted rounded animate-pulse" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <div className="relative">
-            <Avatar className="w-12 h-12 ring-2 ring-primary">
-              <AvatarImage src={profile?.avatar_url || undefined} alt={displayName} />
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                {getInitials()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-card border-2 border-border rounded-full flex items-center justify-center">
-              <ChevronDown className="w-3 h-3 text-muted-foreground" />
-            </div>
-          </div>
-          <div className="text-left">
+        <button className="flex items-center gap-3 w-full text-left">
+          <Avatar className="w-12 h-12 border-2 border-primary/20">
+            <AvatarImage src={profile?.avatar_url || ''} />
+            <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+              {getInitials(displayName)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
             <p className="text-sm text-muted-foreground">{getGreeting()}</p>
-            <h1 className="font-semibold text-foreground">{displayName}</h1>
+            <div className="flex items-center gap-1">
+              <p className="font-semibold text-foreground truncate">{displayName}</p>
+              {patients.length > 1 && (
+                <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              )}
+            </div>
           </div>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-2" align="start">
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground px-2 py-1">Seleccionar paciente</p>
-          {sortedPatients.length === 0 ? (
-            <p className="text-sm text-muted-foreground px-2 py-3 text-center">No hay pacientes registrados</p>
-          ) : (
-            sortedPatients.map((patient) => {
+      
+      {patients.length > 1 && (
+        <PopoverContent className="w-72 p-2" align="start">
+          <p className="text-xs text-muted-foreground px-3 py-2">Seleccionar paciente</p>
+          <div className="space-y-1">
+            {sortedPatients.map((patient) => {
+              const isMain = patient.id === profile?.patient_main;
               const isActive = patient.id === profile?.patient_active;
-              const isMain = patient.id === mainPatientId;
-
+              
               return (
                 <button
                   key={patient.id}
                   onClick={() => handleSelectPatient(patient.id)}
-                  disabled={loading}
-                  className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 border border-primary/30'
-                      : 'hover:bg-accent'
-                  }`}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-3 rounded-xl transition-colors",
+                    isActive ? "bg-accent" : "hover:bg-muted"
+                  )}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    isActive ? 'bg-primary/20' : 'bg-muted'
-                  }`}>
-                    {isMain ? (
-                      <Crown className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                    ) : (
-                      <User className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                    )}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className={`text-sm font-medium ${isActive ? 'text-primary' : 'text-foreground'}`}>
+                  <Avatar className="w-10 h-10">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                      {getInitials(`${patient.first_name} ${patient.last_name}`)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="font-medium text-foreground truncate">
                       {patient.first_name} {patient.last_name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {isMain ? 'Yo (Principal)' : 'Familiar'}
-                    </p>
+                    <p className="text-xs text-muted-foreground">DNI: {patient.dni}</p>
                   </div>
-                  {isActive && (
-                    <Check className="w-4 h-4 text-primary" />
-                  )}
+                  <div className="flex items-center gap-1">
+                    {isMain && <Star className="w-4 h-4 text-chart-3 fill-chart-3" />}
+                    {isActive && <Check className="w-4 h-4 text-primary" />}
+                  </div>
                 </button>
               );
-            })
-          )}
-        </div>
-      </PopoverContent>
+            })}
+          </div>
+        </PopoverContent>
+      )}
     </Popover>
   );
 };

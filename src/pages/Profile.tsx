@@ -4,7 +4,7 @@ import MobileLayout from '@/components/MobileLayout';
 import BottomNav from '@/components/BottomNav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AvatarUpload } from '@/components/molecules/AvatarUpload';
@@ -12,19 +12,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  User,
   Edit2,
   Plus,
   Users,
   Phone,
   Ruler,
   Scale,
-  Heart,
+  Activity,
   ChevronRight,
   LogOut,
   Trash2,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Mail,
+  Calendar
 } from 'lucide-react';
 
 interface Patient {
@@ -123,8 +124,8 @@ const Profile = () => {
   };
 
   const getBMIStatus = (bmi: number) => {
-    if (bmi < 18.5) return { label: 'Bajo peso', color: 'text-chart-4' };
-    if (bmi < 25) return { label: 'Normal', color: 'text-chart-2' };
+    if (bmi < 18.5) return { label: 'Bajo peso', color: 'text-chart-3' };
+    if (bmi < 25) return { label: 'Normal', color: 'text-success' };
     if (bmi < 30) return { label: 'Sobrepeso', color: 'text-chart-3' };
     return { label: 'Obesidad', color: 'text-destructive' };
   };
@@ -219,30 +220,17 @@ const Profile = () => {
         await supabase.storage.from('medical-files').remove(filePaths);
       }
 
-      await supabase
-        .from('medical_files')
-        .delete()
-        .eq('user_id', user.id);
+      await supabase.from('medical_files').delete().eq('user_id', user.id);
+      await supabase.from('patients_app').delete().eq('user_id', user.id);
+      await supabase.from('profiles').delete().eq('user_id', user.id);
 
-      await supabase
-        .from('patients_app')
-        .delete()
-        .eq('user_id', user.id);
-
-      await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', user.id);
-
-      toast.success('Todos tus datos han sido eliminados. Cerrando sesión...');
-
+      toast.success('Cuenta eliminada correctamente');
       await new Promise(resolve => setTimeout(resolve, 1500));
-
       await signOut();
       navigate('/login');
     } catch (error: any) {
       console.error('Error deleting account:', error);
-      toast.error('Error al eliminar la cuenta. Por favor, contacta al soporte.');
+      toast.error('Error al eliminar la cuenta');
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
@@ -253,7 +241,7 @@ const Profile = () => {
     return (
       <MobileLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
         <BottomNav />
       </MobileLayout>
@@ -262,68 +250,62 @@ const Profile = () => {
 
   return (
     <MobileLayout>
-      <div className="px-4 pt-6 pb-24 space-y-6">
+      <div className="px-5 pt-8 pb-28 space-y-6">
         {/* Header */}
         <header className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Mi Perfil</h1>
+          <h1 className="text-2xl font-bold text-foreground">Perfil</h1>
           <button
             onClick={handleSignOut}
-            className="p-2 bg-card border border-border rounded-full hover:bg-destructive/10 transition-colors"
+            className="p-3 bg-card border border-border rounded-xl hover:bg-destructive/10 transition-colors"
           >
             <LogOut className="w-5 h-5 text-muted-foreground" />
           </button>
         </header>
 
-        {/* Main Patient Profile */}
+        {/* Main Profile Card */}
         {mainPatient && (
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+          <Card className="border-border">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between mb-6">
+                <div className="flex items-center gap-4">
                   <AvatarUpload
                     currentAvatarUrl={profile?.avatar_url}
                     fallbackText={`${mainPatient.first_name.charAt(0)}${mainPatient.last_name.charAt(0)}`.toUpperCase()}
                     userId={user?.id || ''}
-                    onAvatarChange={() => {
-                      refreshProfile();
-                    }}
+                    onAvatarChange={() => refreshProfile()}
                     size="lg"
                     editable={false}
                   />
                   <div>
-                    <CardTitle className="text-lg">
+                    <h2 className="text-lg font-semibold text-foreground">
                       {mainPatient.first_name} {mainPatient.last_name}
-                    </CardTitle>
+                    </h2>
                     <p className="text-sm text-muted-foreground">
-                      {calculateAge(mainPatient.birth_date)} años • DNI: {mainPatient.dni}
+                      {calculateAge(mainPatient.birth_date)} años
                     </p>
                   </div>
                 </div>
                 <Sheet open={isEditingProfile} onOpenChange={setIsEditingProfile}>
                   <SheetTrigger asChild>
-                    <button className="p-2 hover:bg-accent rounded-full transition-colors">
+                    <button className="p-2 hover:bg-muted rounded-xl transition-colors">
                       <Edit2 className="w-5 h-5 text-muted-foreground" />
                     </button>
                   </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl">
+                  <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
                     <SheetHeader>
-                      <SheetTitle className="text-left text-xl">Editar Perfil</SheetTitle>
+                      <SheetTitle className="text-left">Editar Perfil</SheetTitle>
                     </SheetHeader>
-                    <div className="space-y-6 pt-6 pb-8">
+                    <div className="space-y-6 pt-6">
                       <div className="flex flex-col items-center gap-4">
                         <AvatarUpload
                           currentAvatarUrl={profile?.avatar_url}
                           fallbackText={`${mainPatient.first_name.charAt(0)}${mainPatient.last_name.charAt(0)}`.toUpperCase()}
                           userId={user?.id || ''}
-                          onAvatarChange={() => {
-                            refreshProfile();
-                          }}
+                          onAvatarChange={() => refreshProfile()}
                           size="lg"
                           editable={true}
                         />
-                        <p className="text-sm text-muted-foreground text-center">
-                          Toca la foto para cambiarla
-                        </p>
+                        <p className="text-sm text-muted-foreground">Toca para cambiar foto</p>
                       </div>
 
                       <div className="space-y-4">
@@ -333,7 +315,6 @@ const Profile = () => {
                             placeholder="+51 999 999 999"
                             value={editForm.phone}
                             onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                            className="w-full"
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -343,7 +324,6 @@ const Profile = () => {
                               type="number"
                               value={editForm.height}
                               onChange={(e) => setEditForm({ ...editForm, height: parseInt(e.target.value) || 0 })}
-                              className="w-full"
                             />
                           </div>
                           <div>
@@ -352,7 +332,6 @@ const Profile = () => {
                               type="number"
                               value={editForm.weight}
                               onChange={(e) => setEditForm({ ...editForm, weight: parseInt(e.target.value) || 0 })}
-                              className="w-full"
                             />
                           </div>
                         </div>
@@ -362,11 +341,7 @@ const Profile = () => {
                         <Button onClick={handleUpdateProfile} className="w-full" size="lg">
                           Guardar Cambios
                         </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setIsEditingProfile(false)}
-                          className="w-full"
-                        >
+                        <Button variant="outline" onClick={() => setIsEditingProfile(false)} className="w-full">
                           Cancelar
                         </Button>
                       </div>
@@ -374,62 +349,39 @@ const Profile = () => {
                   </SheetContent>
                 </Sheet>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="flex flex-col items-center p-3 bg-muted/50 rounded-xl">
-                  <Phone className="w-5 h-5 text-primary mb-1" />
-                  <span className="text-xs text-muted-foreground">Teléfono</span>
-                  <span className="text-sm font-medium text-foreground truncate max-w-full">
-                    {mainPatient.phone || 'Sin registro'}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center p-3 bg-muted/50 rounded-xl">
-                  <Ruler className="w-5 h-5 text-primary mb-1" />
-                  <span className="text-xs text-muted-foreground">Altura</span>
-                  <span className="text-sm font-medium text-foreground">
-                    {mainPatient.height ? `${mainPatient.height} cm` : '-'}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center p-3 bg-muted/50 rounded-xl">
-                  <Scale className="w-5 h-5 text-primary mb-1" />
-                  <span className="text-xs text-muted-foreground">Peso</span>
-                  <span className="text-sm font-medium text-foreground">
-                    {mainPatient.weight ? `${mainPatient.weight} kg` : '-'}
-                  </span>
-                </div>
+
+              {/* Personal Info */}
+              <div className="space-y-3">
+                <InfoRow icon={Mail} label="Email" value={user?.email || '-'} />
+                <InfoRow icon={Phone} label="Teléfono" value={mainPatient.phone || '-'} />
+                <InfoRow icon={Calendar} label="DNI" value={mainPatient.dni} />
               </div>
 
-              {mainPatient.height && mainPatient.weight && (
-                <div className="mt-4 p-4 bg-primary/5 rounded-xl flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Heart className="w-6 h-6 text-primary" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Índice de Masa Corporal</p>
-                      <p className="text-xl font-bold text-foreground">
-                        {calculateBMI(mainPatient.height, mainPatient.weight)}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`text-sm font-medium ${getBMIStatus(parseFloat(calculateBMI(mainPatient.height, mainPatient.weight) || '0')).color}`}>
-                    {getBMIStatus(parseFloat(calculateBMI(mainPatient.height, mainPatient.weight) || '0')).label}
-                  </span>
-                </div>
-              )}
+              {/* Health Stats */}
+              <div className="grid grid-cols-3 gap-3 mt-6">
+                <StatCard icon={Ruler} label="Altura" value={mainPatient.height ? `${mainPatient.height} cm` : '-'} />
+                <StatCard icon={Scale} label="Peso" value={mainPatient.weight ? `${mainPatient.weight} kg` : '-'} />
+                <StatCard 
+                  icon={Activity} 
+                  label="IMC" 
+                  value={calculateBMI(mainPatient.height, mainPatient.weight) || '-'}
+                  subtext={mainPatient.height && mainPatient.weight ? getBMIStatus(parseFloat(calculateBMI(mainPatient.height, mainPatient.weight) || '0')).label : undefined}
+                />
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Family Groups */}
+        {/* Family Section */}
         <section>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold text-foreground">Grupo Familiar</h2>
+              <h2 className="font-semibold text-foreground">Grupo Familiar</h2>
             </div>
             <Dialog open={isAddingFamily} onOpenChange={setIsAddingFamily}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="rounded-xl">
                   <Plus className="w-4 h-4 mr-1" />
                   Agregar
                 </Button>
@@ -440,7 +392,7 @@ const Profile = () => {
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <div>
-                    <label className="text-sm font-medium text-foreground">DNI *</label>
+                    <label className="text-sm font-medium">DNI *</label>
                     <Input
                       placeholder="12345678"
                       value={familyForm.dni}
@@ -451,7 +403,7 @@ const Profile = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-foreground">Nombre *</label>
+                      <label className="text-sm font-medium">Nombre *</label>
                       <Input
                         placeholder="Juan"
                         value={familyForm.first_name}
@@ -460,7 +412,7 @@ const Profile = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground">Apellido *</label>
+                      <label className="text-sm font-medium">Apellido *</label>
                       <Input
                         placeholder="Pérez"
                         value={familyForm.last_name}
@@ -470,7 +422,7 @@ const Profile = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground">Fecha de Nacimiento *</label>
+                    <label className="text-sm font-medium">Fecha de Nacimiento *</label>
                     <Input
                       type="date"
                       value={familyForm.birth_date}
@@ -480,7 +432,7 @@ const Profile = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-foreground">Altura (cm)</label>
+                      <label className="text-sm font-medium">Altura (cm)</label>
                       <Input
                         type="number"
                         placeholder="170"
@@ -490,7 +442,7 @@ const Profile = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground">Peso (kg)</label>
+                      <label className="text-sm font-medium">Peso (kg)</label>
                       <Input
                         type="number"
                         placeholder="70"
@@ -501,172 +453,97 @@ const Profile = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground">Género</label>
-                    <div className="flex gap-4 mt-2">
-                      <button
-                        type="button"
-                        onClick={() => setFamilyForm({ ...familyForm, gender: 'M' })}
-                        className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-                          familyForm.gender === 'M'
-                            ? 'border-primary bg-primary/10'
-                            : 'border-border'
-                        }`}
-                      >
-                        Hombre
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFamilyForm({ ...familyForm, gender: 'F' })}
-                        className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-                          familyForm.gender === 'F'
-                            ? 'border-primary bg-primary/10'
-                            : 'border-border'
-                        }`}
-                      >
-                        Mujer
-                      </button>
-                    </div>
+                    <label className="text-sm font-medium">Género</label>
+                    <select
+                      value={familyForm.gender}
+                      onChange={(e) => setFamilyForm({ ...familyForm, gender: e.target.value })}
+                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">Seleccionar</option>
+                      <option value="M">Masculino</option>
+                      <option value="F">Femenino</option>
+                    </select>
                   </div>
-                  <Button onClick={handleAddFamily} className="w-full">
-                    Agregar Familiar
-                  </Button>
+                  <div className="flex gap-3 pt-4">
+                    <Button variant="outline" onClick={() => setIsAddingFamily(false)} className="flex-1">
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleAddFamily} className="flex-1">
+                      Agregar
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
 
-          {familyPatients.length > 0 ? (
-            <div className="space-y-3">
-              {familyPatients.map((patient) => {
-                const bmi = calculateBMI(patient.height, patient.weight);
-                const bmiStatus = bmi ? getBMIStatus(parseFloat(bmi)) : null;
-
-                return (
-                  <Card key={patient.id} className="overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-secondary/50 rounded-full flex items-center justify-center">
-                            <User className="w-6 h-6 text-secondary-foreground" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-foreground">
-                              {patient.first_name} {patient.last_name}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {calculateAge(patient.birth_date)} años
-                            </p>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                      </div>
-
-                      <div className="mt-3 pt-3 border-t border-border">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-4">
-                            {patient.height && (
-                              <span className="text-muted-foreground">
-                                <Ruler className="w-4 h-4 inline mr-1" />
-                                {patient.height} cm
-                              </span>
-                            )}
-                            {patient.weight && (
-                              <span className="text-muted-foreground">
-                                <Scale className="w-4 h-4 inline mr-1" />
-                                {patient.weight} kg
-                              </span>
-                            )}
-                          </div>
-                          {bmi && bmiStatus && (
-                            <span className={`font-medium ${bmiStatus.color}`}>
-                              IMC: {bmi} - {bmiStatus.label}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : (
-            <Card className="border-dashed">
-              <CardContent className="p-8 text-center">
-                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">
-                  Aún no tienes familiares agregados
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Agrega a tu familia para monitorear su salud
-                </p>
+          {familyPatients.length === 0 ? (
+            <Card className="border-border">
+              <CardContent className="p-6 text-center">
+                <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No tienes familiares registrados</p>
               </CardContent>
             </Card>
+          ) : (
+            <div className="space-y-3">
+              {familyPatients.map((patient) => (
+                <Card key={patient.id} className="border-border">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+                        <span className="text-sm font-semibold text-accent-foreground">
+                          {patient.first_name.charAt(0)}{patient.last_name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{patient.first_name} {patient.last_name}</p>
+                        <p className="text-xs text-muted-foreground">{calculateAge(patient.birth_date)} años</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </section>
 
-        {/* Delete Account Section */}
-        <section className="pt-6 border-t border-border">
+        {/* Account Info */}
+        <section className="space-y-3">
+          <h2 className="font-semibold text-foreground">Cuenta</h2>
           <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
             <DialogTrigger asChild>
-              <Button
-                variant="destructive"
-                className="w-full"
-                disabled={deleting}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Eliminar Cuenta
-              </Button>
+              <button className="w-full p-4 bg-card rounded-xl border border-border flex items-center gap-3 hover:bg-destructive/5 transition-colors">
+                <div className="w-10 h-10 bg-destructive/10 rounded-xl flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-destructive" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium text-destructive">Eliminar cuenta</p>
+                  <p className="text-xs text-muted-foreground">Elimina todos tus datos</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-destructive">
                   <AlertTriangle className="w-5 h-5" />
-                  Confirmar Eliminación de Cuenta
+                  Eliminar Cuenta
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <p className="text-sm text-foreground">
-                  Esta acción es <strong className="text-destructive">irreversible</strong>. Se eliminará permanentemente:
+              <div className="py-4">
+                <p className="text-sm text-muted-foreground">
+                  Esta acción eliminará permanentemente tu cuenta y todos tus datos. Esta acción no se puede deshacer.
                 </p>
-                <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-                  <li>Tu perfil y datos personales</li>
-                  <li>Todos los pacientes registrados</li>
-                  <li>Todos los archivos médicos subidos</li>
-                  <li>Todas las conversaciones y mensajes</li>
-                  <li>Tu foto de perfil</li>
-                  <li>Tu cuenta de autenticación</li>
-                </ul>
-                <p className="text-sm font-medium text-foreground">
-                  ¿Estás seguro de que deseas eliminar tu cuenta?
-                </p>
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="flex-1"
-                    disabled={deleting}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteAccount}
-                    className="flex-1"
-                    disabled={deleting}
-                  >
-                    {deleting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Eliminando...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Sí, Eliminar
-                      </>
-                    )}
-                  </Button>
-                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="flex-1">
+                  Cancelar
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting} className="flex-1">
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Eliminar
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -676,5 +553,22 @@ const Profile = () => {
     </MobileLayout>
   );
 };
+
+// Helper Components
+const InfoRow = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
+  <div className="flex items-center gap-3 py-2">
+    <Icon className="w-4 h-4 text-muted-foreground" />
+    <span className="text-sm text-muted-foreground flex-1">{label}</span>
+    <span className="text-sm font-medium text-foreground">{value}</span>
+  </div>
+);
+
+const StatCard = ({ icon: Icon, label, value, subtext }: { icon: any; label: string; value: string; subtext?: string }) => (
+  <div className="bg-accent/50 rounded-xl p-3 text-center">
+    <Icon className="w-5 h-5 text-accent-foreground mx-auto mb-1" />
+    <p className="text-lg font-semibold text-foreground">{value}</p>
+    <p className="text-xs text-muted-foreground">{subtext || label}</p>
+  </div>
+);
 
 export default Profile;
