@@ -12,13 +12,11 @@ import { useActivePatient } from '@/hooks/useActivePatient';
 import michiMedic from '@/assets/michi-medic.png';
 import michiWelcome from '@/assets/michi-welcome.png';
 
-const initialMessages: Message[] = [
-  {
-    id: '1',
-    content: '¡Hola! Soy Michi Medic, tu asistente de salud.\n\nEstoy aquí para ayudarte. Cuéntame, ¿qué síntomas estás experimentando hoy?',
-    sender: 'mama',
-    timestamp: new Date(),
-  },
+const quickSuggestions = [
+  'Dolor de barriga',
+  'Calor en la frente',
+  'Dolor de cabeza',
+  'Tos o gripe',
 ];
 
 const symptomQuestions = [
@@ -77,10 +75,38 @@ const Chat = () => {
     scrollToBottom();
   }, [messages]);
 
+  const [showIntro, setShowIntro] = useState(true);
+
   const startNewConversation = () => {
-    setMessages(initialMessages);
+    setMessages([]);
     setHasConversation(true);
+    setShowIntro(true);
     setConversationContext([]);
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setShowIntro(false);
+    
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: suggestion,
+      sender: 'user',
+      timestamp: new Date(),
+    };
+    setMessages([userMessage]);
+    setIsTyping(true);
+
+    setTimeout(() => {
+      const response = generateResponse(suggestion);
+      const michiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: response,
+        sender: 'mama',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, michiMessage]);
+      setIsTyping(false);
+    }, 1500);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,6 +197,8 @@ const Chat = () => {
 
   const handleSend = async () => {
     if (!inputValue.trim() && !attachedFile) return;
+    
+    setShowIntro(false);
 
     if (attachedFile) {
       const userContext = inputValue.trim() || undefined;
@@ -306,62 +334,107 @@ const Chat = () => {
         </button>
       </header>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 pb-40 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              "flex gap-3",
-              message.sender === 'user' ? "justify-end" : "justify-start"
-            )}
-          >
-            {message.sender === 'mama' && (
-              <img 
-                src={michiMedic} 
-                alt="Michi Medic" 
-                className="w-8 h-8 object-contain flex-shrink-0 self-end"
-              />
-            )}
-            <div
-              className={cn(
-                "max-w-[75%] px-4 py-3 rounded-2xl",
-                message.sender === 'user'
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-card border border-border text-foreground rounded-bl-md"
-              )}
-            >
-              <p className="text-sm whitespace-pre-line">{message.content}</p>
-              <p
-                className={cn(
-                  "text-xs mt-2",
-                  message.sender === 'user' ? "text-primary-foreground/70" : "text-muted-foreground"
-                )}
-              >
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            </div>
-          </div>
-        ))}
-
-        {isTyping && (
-          <div className="flex gap-3 justify-start">
+      {/* Messages or Intro */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 pb-40">
+        {showIntro && messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full">
             <img 
               src={michiMedic} 
               alt="Michi Medic" 
-              className="w-8 h-8 object-contain flex-shrink-0 self-end"
+              className="w-28 h-28 object-contain mb-4"
             />
-            <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-bl-md">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <p className="text-foreground text-center text-base mb-8">
+              ¿Coméntame qué síntoma sientes?
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn(
+                  "flex gap-3",
+                  message.sender === 'user' ? "justify-end" : "justify-start"
+                )}
+              >
+                {message.sender === 'mama' && (
+                  <img 
+                    src={michiMedic} 
+                    alt="Michi Medic" 
+                    className="w-8 h-8 object-contain flex-shrink-0 self-end"
+                  />
+                )}
+                <div
+                  className={cn(
+                    "max-w-[75%] px-4 py-3 rounded-2xl",
+                    message.sender === 'user'
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-card border border-border text-foreground rounded-bl-md"
+                  )}
+                >
+                  <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  <p
+                    className={cn(
+                      "text-xs mt-2",
+                      message.sender === 'user' ? "text-primary-foreground/70" : "text-muted-foreground"
+                    )}
+                  >
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
               </div>
-            </div>
+            ))}
+
+            {isTyping && (
+              <div className="flex gap-3 justify-start">
+                <img 
+                  src={michiMedic} 
+                  alt="Michi Medic" 
+                  className="w-8 h-8 object-contain flex-shrink-0 self-end"
+                />
+                <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-bl-md">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
+
+      {/* Suggestions */}
+      {showIntro && messages.length === 0 && (
+        <div className="px-5 pb-4">
+          <div className="bg-muted/50 rounded-xl p-4">
+            <div className="flex items-start justify-between mb-3">
+              <p className="text-sm text-muted-foreground">
+                Soy michi medic, te puedo ayudar a llegar a qué especialista debes a ir con tu malestar.
+              </p>
+              <button 
+                onClick={() => setShowIntro(false)}
+                className="text-muted-foreground hover:text-foreground p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {quickSuggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="px-3 py-1.5 bg-background border border-border rounded-full text-sm text-foreground hover:bg-accent transition-colors"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Input */}
       <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-md px-5 py-3 bg-background border-t border-border">
