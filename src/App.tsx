@@ -7,10 +7,12 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Chat from "./pages/Chat";
+import DoctorProfile from "./pages/DoctorProfile";
 import Login from "./pages/Login";
 import Auth from "./pages/Auth";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
+import MedicalLibrary from "./pages/MedicalLibrary";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +38,16 @@ const App = () => (
             <Route path="/chat" element={
               <ProtectedRoute>
                 <Chat />
+              </ProtectedRoute>
+            } />
+            <Route path="/library" element={
+              <ProtectedRoute>
+                <MedicalLibrary />
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor/:id" element={
+              <ProtectedRoute>
+                <DoctorProfile />
               </ProtectedRoute>
             } />
             <Route path="/profile" element={
