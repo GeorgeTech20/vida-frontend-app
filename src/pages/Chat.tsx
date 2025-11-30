@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { useChatStream } from '@/hooks/useChatStream';
-import vidaAvatar from '@/assets/michi-medic.png';
+import mishaAvatar from '@/assets/michi-medic.png';
 
 // Common health concerns with icons and soft colors
 const healthConcerns = [
@@ -228,7 +228,7 @@ const Chat = () => {
 
         setIsTyping(true);
         setTimeout(() => {
-          const vidaMessage: Message = {
+          const mishaMessage: Message = {
             id: (Date.now() + 2).toString(),
             content: userContext
               ? `¡Perfecto! He guardado tu archivo "${attachedFile.name}" en tu Historia Clínica Digital.\n\n¿Hay algo más en lo que pueda ayudarte?`
@@ -236,7 +236,7 @@ const Chat = () => {
             sender: 'misha',
             timestamp: new Date(),
           };
-          setMessages((prev) => [...prev, vidaMessage]);
+          setMessages((prev) => [...prev, mishaMessage]);
           setIsTyping(false);
         }, 1000);
       }
@@ -265,7 +265,7 @@ const Chat = () => {
               <div className="relative inline-block mb-4">
                 <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-teal-400 to-cyan-500 p-0.5 shadow-lg shadow-teal-200/50">
                   <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center overflow-hidden">
-                    <img src={vidaAvatar} alt="Vida" className="w-14 h-14 object-contain" />
+                    <img src={mishaAvatar} alt="Misha" className="w-14 h-14 object-contain" />
                   </div>
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-3 border-white shadow-sm flex items-center justify-center">
@@ -274,7 +274,7 @@ const Chat = () => {
               </div>
               
               <h1 className="text-2xl font-semibold text-slate-800 mb-2">
-                Hola, soy <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-cyan-500">Vida</span>
+                Hola, soy <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-cyan-500">Misha</span>
               </h1>
               <p className="text-slate-500 text-base">
                 ¿Cómo puedo ayudarte hoy?
@@ -346,7 +346,7 @@ const Chat = () => {
             {/* Disclaimer */}
             <div className="text-center px-4">
               <p className="text-xs text-slate-400 leading-relaxed">
-                ⚕️ Vida brinda orientación general, no diagnósticos médicos.
+                ⚕️ Misha brinda orientación general, no diagnósticos médicos.
                 <br />
                 <span className="text-slate-300">Consulta siempre a un profesional de salud.</span>
               </p>
@@ -368,13 +368,13 @@ const Chat = () => {
           <div className="relative">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 p-0.5 shadow-sm">
               <div className="w-full h-full rounded-2xl bg-white flex items-center justify-center overflow-hidden">
-                <img src={vidaAvatar} alt="Vida" className="w-7 h-7 object-contain" />
+                <img src={mishaAvatar} alt="Misha" className="w-7 h-7 object-contain" />
               </div>
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white" />
           </div>
           <div className="flex-1">
-            <h1 className="font-semibold text-slate-800">Vida</h1>
+            <h1 className="font-semibold text-slate-800">Misha</h1>
             <p className="text-xs text-emerald-500 font-medium">En línea</p>
           </div>
         </header>
@@ -385,7 +385,7 @@ const Chat = () => {
             <div className="flex flex-col items-center justify-center h-full">
               <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-teal-400 to-cyan-500 p-0.5 mb-4 shadow-lg shadow-teal-200/30">
                 <div className="w-full h-full rounded-3xl bg-white flex items-center justify-center">
-                  <img src={vidaAvatar} alt="Vida" className="w-14 h-14 object-contain" />
+                  <img src={mishaAvatar} alt="Misha" className="w-14 h-14 object-contain" />
                 </div>
               </div>
               <p className="text-slate-600 text-center text-base">
@@ -405,7 +405,7 @@ const Chat = () => {
                   {message.sender === 'misha' && (
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 p-0.5 flex-shrink-0 self-end shadow-sm">
                       <div className="w-full h-full rounded-xl bg-white flex items-center justify-center">
-                        <img src={vidaAvatar} alt="Vida" className="w-5 h-5 object-contain" />
+                        <img src={mishaAvatar} alt="Misha" className="w-5 h-5 object-contain" />
                       </div>
                     </div>
                   )}
