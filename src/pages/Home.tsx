@@ -72,7 +72,7 @@ const Home = () => {
         {/* Health Profile */}
         <HealthProfile />
 
-        {/* Mama Chat Button */}
+        {/* Misha Chat Button */}
         <button
           onClick={() => navigate('/chat')}
           className="w-full p-5 bg-primary/5 rounded-2xl flex items-center gap-4 hover:bg-primary/10 transition-all border border-primary/20"
@@ -81,7 +81,7 @@ const Home = () => {
             <HeartPulse className="w-7 h-7 text-primary-foreground" />
           </div>
           <div className="text-left flex-1">
-            <h3 className="font-semibold text-foreground">Habla con Michi Medic</h3>
+            <h3 className="font-semibold text-foreground">Habla con Misha</h3>
             <p className="text-sm text-muted-foreground">Tu asistente de salud 24/7</p>
           </div>
           <ChevronRight className="w-5 h-5 text-primary" />

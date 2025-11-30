@@ -17,7 +17,7 @@ export interface Appointment {
 export interface Message {
   id: string;
   content: string;
-  sender: 'user' | 'mama';
+  sender: 'user' | 'misha';
   timestamp: Date;
 }
 

@@ -22,7 +22,7 @@ const MamaModal = ({ open, onOpenChange }: MamaModalProps) => {
         <div className="flex flex-col items-center gap-6 text-center">
           <img
             src={mamaAvatar}
-            alt="Mama"
+            alt="Misha"
             className="w-20 h-20 rounded-full shadow-md"
           />
 

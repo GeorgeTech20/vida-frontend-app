@@ -10,8 +10,8 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useActivePatient } from '@/hooks/useActivePatient';
 import { useChatStream } from '@/hooks/useChatStream';
-import michiMedic from '@/assets/michi-medic.png';
-import michiWelcome from '@/assets/michi-welcome.png';
+import mishaAvatar from '@/assets/michi-medic.png';
+import mishaWelcome from '@/assets/michi-welcome.png';
 
 const quickSuggestions = [
   'Dolor de barriga',
@@ -19,6 +19,63 @@ const quickSuggestions = [
   'Dolor de cabeza',
   'Tos o gripe',
 ];
+
+// Helper function to render markdown: **bold** and * bullet lists
+const formatBoldText = (text: string, keyPrefix: string = '') => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={`${keyPrefix}-bold-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+};
+
+const formatMessageContent = (content: string) => {
+  const lines = content.split('\n');
+  const result: React.ReactNode[] = [];
+  let currentList: React.ReactNode[] = [];
+  let listKey = 0;
+
+  const flushList = () => {
+    if (currentList.length > 0) {
+      result.push(
+        <ul key={`list-${listKey++}`} className="list-disc list-inside my-1 space-y-0.5">
+          {currentList}
+        </ul>
+      );
+      currentList = [];
+    }
+  };
+
+  lines.forEach((line, lineIndex) => {
+    // Check if line is a bullet item (starts with "* " or just "*" followed by text)
+    const bulletMatch = line.match(/^\*\s+(.*)$/) || line.match(/^\*([^\s*].*)$/);
+    
+    if (bulletMatch) {
+      const bulletContent = bulletMatch[1];
+      currentList.push(
+        <li key={`item-${lineIndex}`}>{formatBoldText(bulletContent, `li-${lineIndex}`)}</li>
+      );
+    } else {
+      flushList();
+      if (line) {
+        result.push(
+          <span key={`line-${lineIndex}`}>
+            {formatBoldText(line, `span-${lineIndex}`)}
+            {lineIndex < lines.length - 1 && <br />}
+          </span>
+        );
+      } else if (lineIndex < lines.length - 1) {
+        // Empty line - add line break for spacing
+        result.push(<br key={`br-${lineIndex}`} />);
+      }
+    }
+  });
+
+  flushList(); // Flush any remaining list items
+  return result;
+};
 
 const Chat = () => {
   const { user, profile } = useAuth();
@@ -34,8 +91,12 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Note: vida-agent uses numeric patient IDs (Long), while Supabase uses UUIDs
+  // For now, we use a default patientId of 1 until proper user mapping is implemented
+  const numericPatientId = 1; // TODO: Map Supabase UUID to vida-agent patient ID
+  
   const { sendMessage: sendStreamMessage, isLoading } = useChatStream({
-    patientId: activePatient?.id || profile?.patient_active || null,
+    patientId: numericPatientId,
     conversationId,
     onConversationIdChange: setConversationId,
   });
@@ -75,7 +136,7 @@ const Chat = () => {
       {
         id: assistantId,
         content: '',
-        sender: 'mama',
+        sender: 'misha',
         timestamp: new Date(),
       },
     ]);
@@ -200,15 +261,15 @@ const Chat = () => {
 
         setIsTyping(true);
         setTimeout(() => {
-          const michiMessage: Message = {
+          const mishaMessage: Message = {
             id: (Date.now() + 2).toString(),
             content: userContext
               ? `¡Perfecto! He guardado tu archivo "${attachedFile.name}" en tu Historia Clínica Digital.\n\n¿Hay algo más en lo que pueda ayudarte?`
               : '¡Perfecto! He guardado tu archivo en tu Historia Clínica Digital. Puedes acceder a él cuando lo necesites.\n\n¿Hay algo más en lo que pueda ayudarte?',
-            sender: 'mama',
+            sender: 'misha',
             timestamp: new Date(),
           };
-          setMessages((prev) => [...prev, michiMessage]);
+          setMessages((prev) => [...prev, mishaMessage]);
           setIsTyping(false);
         }, 1000);
       }
@@ -239,12 +300,12 @@ const Chat = () => {
           {/* Welcome Content */}
           <div className="flex-1 flex flex-col items-center justify-center px-6 pb-24">
             <img 
-              src={michiWelcome} 
-              alt="Michi Medic" 
+              src={mishaWelcome} 
+              alt="Misha" 
               className="w-32 h-32 object-contain mb-4"
             />
-            <h2 className="text-lg font-semibold text-foreground mb-1">Michi Medic</h2>
-            <p className="text-muted-foreground text-sm mb-6">Con amor y paz 💙</p>
+            <h2 className="text-lg font-semibold text-foreground mb-1">Misha</h2>
+            <p className="text-muted-foreground text-sm mb-6">Tu asistente de salud 💙</p>
             <button
               onClick={startNewConversation}
               className="flex items-center gap-2 px-6 py-3 border border-primary text-primary rounded-full font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
@@ -266,12 +327,12 @@ const Chat = () => {
       <header className="flex items-center justify-between px-6 py-4 border-b border-border">
         <div className="flex items-center gap-3">
           <img 
-            src={michiMedic} 
-            alt="Michi Medic" 
+            src={mishaAvatar} 
+            alt="Misha" 
             className="w-10 h-10 object-contain"
           />
           <div>
-            <h1 className="font-semibold text-foreground">Michi Medic</h1>
+            <h1 className="font-semibold text-foreground">Misha</h1>
             <p className="text-xs text-success">En línea</p>
           </div>
         </div>
@@ -292,8 +353,8 @@ const Chat = () => {
         {showIntro && messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
             <img 
-              src={michiMedic} 
-              alt="Michi Medic" 
+              src={mishaAvatar} 
+              alt="Misha" 
               className="w-28 h-28 object-contain mb-4"
             />
             <p className="text-foreground text-center text-base mb-8">
@@ -310,10 +371,10 @@ const Chat = () => {
                   message.sender === 'user' ? "justify-end" : "justify-start"
                 )}
               >
-                {message.sender === 'mama' && (
+                {message.sender === 'misha' && (
                   <img 
-                    src={michiMedic} 
-                    alt="Michi Medic" 
+                    src={mishaAvatar} 
+                    alt="Misha" 
                     className="w-8 h-8 object-contain flex-shrink-0 self-end"
                   />
                 )}
@@ -325,35 +386,29 @@ const Chat = () => {
                       : "bg-card border border-border text-foreground rounded-bl-md"
                   )}
                 >
-                  <p className="text-sm whitespace-pre-line">{message.content}</p>
-                  <p
-                    className={cn(
-                      "text-xs mt-2",
-                      message.sender === 'user' ? "text-primary-foreground/70" : "text-muted-foreground"
-                    )}
-                  >
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  {/* Show typing animation if message is empty and still loading */}
+                  {message.sender === 'misha' && !message.content && isTyping ? (
+                    <div className="flex gap-1 py-1">
+                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm whitespace-pre-line">{formatMessageContent(message.content)}</p>
+                      <p
+                        className={cn(
+                          "text-xs mt-2",
+                          message.sender === 'user' ? "text-primary-foreground/70" : "text-muted-foreground"
+                        )}
+                      >
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
-
-            {isTyping && (
-              <div className="flex gap-3 justify-start">
-                <img 
-                  src={michiMedic} 
-                  alt="Michi Medic" 
-                  className="w-8 h-8 object-contain flex-shrink-0 self-end"
-                />
-                <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-bl-md">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              </div>
-            )}
             <div ref={messagesEndRef} />
           </div>
         )}
@@ -365,7 +420,7 @@ const Chat = () => {
           <div className="bg-muted/50 rounded-xl p-4">
             <div className="flex items-start justify-between mb-3">
               <p className="text-sm text-muted-foreground">
-                Soy michi medic, te puedo ayudar a llegar a qué especialista debes a ir con tu malestar.
+                Soy Misha, te puedo ayudar a llegar a qué especialista debes ir con tu malestar.
               </p>
               <button 
                 onClick={() => setShowIntro(false)}
