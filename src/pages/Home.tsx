@@ -1,4 +1,4 @@
-import { FolderOpen, HeartPulse, ChevronRight, Bell } from 'lucide-react';
+import { FolderOpen, HeartPulse, ChevronRight, LogOut } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
 import BottomNav from '@/components/BottomNav';
 import HealthProfile from '@/components/HealthProfile';
@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useActivePatient } from '@/hooks/useActivePatient';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -30,6 +32,15 @@ const Home = () => {
     return profile?.name?.charAt(0).toUpperCase() || 'U';
   };
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error('Error al cerrar sesión');
+    } else {
+      navigate('/auth');
+    }
+  };
+
   return (
     <MobileLayout>
       <div className="px-5 pt-8 pb-28 space-y-6">
@@ -43,8 +54,11 @@ const Home = () => {
             <p className="text-sm text-muted-foreground mt-1">Tu salud acompañada</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="p-2 bg-card border border-border rounded-xl hover:bg-muted transition-colors">
-              <Bell className="w-5 h-5 text-muted-foreground" />
+            <button 
+              onClick={handleLogout}
+              className="p-2 bg-card border border-border rounded-xl hover:bg-destructive hover:text-destructive-foreground transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
             </button>
             <Avatar className="w-12 h-12 border-2 border-primary/20">
               <AvatarImage src={profile?.avatar_url || ''} />
@@ -67,7 +81,7 @@ const Home = () => {
             <HeartPulse className="w-7 h-7 text-primary-foreground" />
           </div>
           <div className="text-left flex-1">
-            <h3 className="font-semibold text-foreground">Habla con Mamá</h3>
+            <h3 className="font-semibold text-foreground">Habla con Michi Medic</h3>
             <p className="text-sm text-muted-foreground">Tu asistente de salud 24/7</p>
           </div>
           <ChevronRight className="w-5 h-5 text-primary" />
